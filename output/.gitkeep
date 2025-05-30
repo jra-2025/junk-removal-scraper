@@ -1,1 +1,115 @@
+// examples/example-usage.js
+const { JunkRemovalScraper } = require('../src/scraper');
 
+async function scrapeJunkMasters() {
+  const scraper = new JunkRemovalScraper(true); // verbose mode
+  
+  try {
+    console.log('🚀 Starting Junk Masters MN scrape...\n');
+    
+    await scraper.initialize();
+    
+    const result = await scraper.scrapeWebsite('https://www.junkmastersmn.com');
+    
+    console.log('\n📊 SCRAPING RESULTS:\n');
+    console.log(`Title: ${result.title}`);
+    console.log(`URL: ${result.url}`);
+    console.log(`Scraped At: ${result.scrapedAt}`);
+    console.log(`Total Sections: ${result.sections.length}\n`);
+    
+    // Show first 5 sections
+    console.log('🔍 FIRST 5 SECTIONS:\n');
+    result.sections.slice(0, 5).forEach((section, index) => {
+      console.log(`--- Section ${index + 1} ---`);
+      console.log(`ID: ${section.sectionId}`);
+      console.log(`Type: ${section.sectionType}`);
+      console.log(`Element: ${section.element}`);
+      console.log(`Text: "${section.text}"`);
+      console.log(`Characters: ${section.charCount}`);
+      console.log(`Container: ${section.parentContainer}`);
+      console.log(`Has Button: ${section.hasButton}`);
+      if (section.buttonText) {
+        console.log(`Button: "${section.buttonText}"`);
+      }
+      console.log('');
+    });
+    
+    // Show specific content checks
+    console.log('✅ CONTENT VERIFICATION:\n');
+    
+    // Check for hero
+    const hero = result.sections.find(s => 
+      s.text.includes('TWIN CITIES JUNK REMOVAL SERVICES')
+    );
+    console.log(`1. Hero "TWIN CITIES JUNK REMOVAL SERVICES": ${hero ? 'FOUND' : 'NOT FOUND'}`);
+    if (hero) {
+      console.log(`   Full text: "${hero.text}"`);
+    }
+    
+    // Check for locally owned
+    const locallyOwned = result.sections.find(s => 
+      s.text.toLowerCase().includes('locally owned')
+    );
+    console.log(`\n2. Locally owned subheading: ${locallyOwned ? 'FOUND' : 'NOT FOUND'}`);
+    if (locallyOwned) {
+      console.log(`   Text: "${locallyOwned.text}"`);
+    }
+    
+    // Check service types
+    console.log('\n3. Service Types:');
+    const serviceTypes = ['residential', 'commercial', 'construction', 'estate', 'hoarding'];
+    serviceTypes.forEach(type => {
+      const found = result.sections.filter(s => 
+        s.text.toLowerCase().includes(type)
+      );
+      console.log(`   - ${type}: ${found.length > 0 ? `FOUND (${found.length} sections)` : 'NOT FOUND'}`);
+    });
+    
+    // Check phone CTAs
+    const phoneRegex = /\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/;
+    const phoneSections = result.sections.filter(s => phoneRegex.test(s.text));
+    console.log(`\n4. Phone Number CTAs: ${phoneSections.length > 0 ? `FOUND (${phoneSections.length} sections)` : 'NOT FOUND'}`);
+    phoneSections.slice(0, 3).forEach(section => {
+      const phone = section.text.match(phoneRegex);
+      console.log(`   - ${phone[0]} in section ${section.sectionId}`);
+    });
+    
+    // Check testimonials
+    const testimonials = result.sections.filter(s => 
+      s.sectionType === 'testimonial' || 
+      s.text.toLowerCase().includes('testimonial') ||
+      s.text.toLowerCase().includes('review')
+    );
+    console.log(`\n5. Testimonials: ${testimonials.length > 0 ? `FOUND (${testimonials.length} sections)` : 'NOT FOUND'}`);
+    testimonials.slice(0, 2).forEach(section => {
+      console.log(`   - ${section.sectionId}: "${section.text.substring(0, 80)}..."`);
+    });
+    
+    // Section type summary
+    console.log('\n📈 SECTION TYPE SUMMARY:\n');
+    const typeCounts = {};
+    result.sections.forEach(s => {
+      typeCounts[s.sectionType] = (typeCounts[s.sectionType] || 0) + 1;
+    });
+    Object.entries(typeCounts).sort((a, b) => b[1] - a[1]).forEach(([type, count]) => {
+      console.log(`   ${type}: ${count} sections`);
+    });
+    
+    // Save full results
+    const fs = require('fs').promises;
+    await fs.writeFile(
+      'junkmasters-full-results.json',
+      JSON.stringify(result, null, 2),
+      'utf8'
+    );
+    console.log('\n💾 Full results saved to junkmasters-full-results.json');
+    
+  } catch (error) {
+    console.error('\n❌ Error:', error.message);
+  } finally {
+    await scraper.close();
+  }
+}
+
+// Run the example
+scrapeJunkMasters();
