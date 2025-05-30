@@ -1,9 +1,10 @@
+# Create a new Dockerfile
+cat > Dockerfile << 'EOF'
 FROM node:18-slim
 
-# Install Chrome dependencies
+# Install dependencies for Puppeteer
 RUN apt-get update && apt-get install -y \
     wget \
-    gnupg \
     ca-certificates \
     fonts-liberation \
     libappindicator3-1 \
@@ -40,32 +41,23 @@ RUN apt-get update && apt-get install -y \
     libxtst6 \
     lsb-release \
     xdg-utils \
-    --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-# Create app directory
+# Set working directory
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --only=production
+RUN npm install --production
 
-# Copy app source
+# Copy application files
 COPY . .
-
-# Create output directory
-RUN mkdir -p output
-
-# Run as non-root user
-RUN groupadd -r pptruser && useradd -r -g pptruser -G audio,video pptruser \
-    && chown -R pptruser:pptruser /app
-
-USER pptruser
 
 # Expose port
 EXPOSE 8080
 
-# Start the server
+# Start the application
 CMD ["npm", "start"]
+EOF
