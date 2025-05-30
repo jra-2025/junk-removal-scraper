@@ -34,7 +34,17 @@ class JunkRemovalScraper {
     this.log('Initializing browser...');
     this.browser = await puppeteer.launch({
       headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process',
+        '--disable-extensions'
+      ],
+      timeout: 30000
     });
     this.log('Browser initialized');
   }
